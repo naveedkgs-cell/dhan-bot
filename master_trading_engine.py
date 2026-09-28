@@ -504,6 +504,11 @@ def compute_frame(yf_symbol):
     raw = yf.download(yf_symbol, period="3d", interval="5m", progress=False)
     if raw.empty:
         return None
+    # Newer yfinance versions return MultiIndex columns (Price, Ticker) even
+    # for a single symbol. Flatten to plain column names, otherwise every
+    # df["close"] is a one-column DataFrame and the indicators crash.
+    if isinstance(raw.columns, pd.MultiIndex):
+        raw.columns = raw.columns.get_level_values(0)
     raw = raw.rename(columns=str.lower)[["open", "high", "low", "close", "volume"]].dropna()
     raw["ema9"] = ema(raw["close"], 9)
     raw["ema21"] = ema(raw["close"], 21)
